@@ -1,3 +1,10 @@
+### Note-after-forking:
+###### This repo contains script and some edits to source files for preparing ustreamer binary in order to use HDMI passthrough on non-PiKVM V4 Plus platforms, specifically:
+- PiKVM V3 - mandatory, HDMI1/OUT2 port is blocked by case fan.
+- PiKVM V0-/V1-/V2-hdmi-\* variants - optional for Pi 4 but mandatory for Pi 3.
+- V1/V2-zero2W-hdmi variants not tested but theoretically possible. Input is welcomed.
+
+
 # µStreamer
 [![CI](https://github.com/pikvm/ustreamer/workflows/CI/badge.svg)](https://github.com/pikvm/ustreamer/actions?query=workflow%3ACI)
 [![Discord](https://img.shields.io/discord/580094191938437144?logo=discord)](https://discord.gg/bpmXfz5)
