@@ -81,7 +81,7 @@ us_drm_s *us_drm_init(void) {
 	US_CALLOC(drm, 1);
 	// drm->path = "/dev/dri/card0";
 	drm->path = "/dev/dri/by-path/platform-gpu-card";
-	drm->port = "HDMI-A-2"; // OUT2 on PiKVM V4 Plus
+	drm->port = "HDMI-A-1"; // HDMI0 on Pi 4 model B
 	drm->timeout = 5;
 	drm->blank_after = 5;
 	drm->run = run;
