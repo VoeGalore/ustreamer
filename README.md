@@ -1,9 +1,26 @@
-### Note-after-forking:
-###### This repo contains script and some edits to source files for preparing ustreamer binary in order to use HDMI passthrough on non-PiKVM V4 Plus platforms, specifically:
+ This forked repo contains some edits to source files for preparing ustreamer binary in order to use HDMI passthrough on non-PiKVM V4 Plus platforms, specifically:
 - PiKVM V3 - mandatory, HDMI1/OUT2 port is blocked by case fan.
 - PiKVM V0-/V1-/V2-hdmi-\* variants - optional for Pi 4 but mandatory for Pi 3.
 - V1/V2-zero2W-hdmi variants not tested but theoretically possible. Input is welcomed.
 
+There's a bash script `config-hdmi0-passthru.sh` in the repo's root directory. You can just use it without cloning this repo, check the content of the script before using it to make sure you understand what it does. 
+
+The script will do:
+- Ask for confirmation
+- Clone ustreamer from official repo https://github.com/pikvm/ustreamer
+- Make changes to `/src/libs/drm/drm.c` base on your board type without your input
+- Compile and install ustreamer, replacing existing ustreamer in your OS.
+
+#### To revert back to stock:
+Assuming you are using precompiled PiKVM OS based on Arch Linux ARM, including official SD card images,
+```
+rw
+rm /usr/bin/ustreamer
+rm /usr/bin/ustreamer-dump
+pacman -S ustreamer
+ro
+systemctl restart kvmd
+```
 
 # µStreamer
 [![CI](https://github.com/pikvm/ustreamer/workflows/CI/badge.svg)](https://github.com/pikvm/ustreamer/actions?query=workflow%3ACI)
