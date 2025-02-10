@@ -20,46 +20,61 @@
 *****************************************************************************/
 
 
-#pragma once
+#include "au.h"
 
-#include <stdatomic.h>
+#include <stdlib.h>
 
-#include <pthread.h>
-#include <janus/plugins/plugin.h>
-
-#include "uslibs/types.h"
-#include "uslibs/list.h"
-#include "uslibs/ring.h"
-
-#include "rtp.h"
+#include "uslibs/tools.h"
 
 
-typedef struct {
-	janus_callbacks			*gw;
-	janus_plugin_session	*session;
-	atomic_bool				transmit;
-	atomic_bool				transmit_acap;
-	atomic_bool				transmit_aplay;
-	atomic_uint				video_orient;
+us_au_pcm_s *us_au_pcm_init(void) {
+	us_au_pcm_s *pcm;
+	US_CALLOC(pcm, 1);
+	return pcm;
+}
 
-	pthread_t				video_tid;
-	pthread_t				acap_tid;
-	pthread_t				aplay_tid;
-	atomic_bool				stop;
+void us_au_pcm_destroy(us_au_pcm_s *pcm) {
+	free(pcm);
+}
 
-	us_ring_s				*video_ring;
-	us_ring_s				*acap_ring;
+void us_au_pcm_mix(us_au_pcm_s *dest, us_au_pcm_s *src) {
+	const uz size = src->frames * US_RTP_OPUS_CH * 2; // 2 for 16 bit
+	if (src->frames == 0) {
+		return;
+	} else if (dest->frames == 0) {
+		memcpy(dest->data, src->data, size);
+		dest->frames = src->frames;
+	} else if (dest->frames == src->frames) {
+		// https://stackoverflow.com/questions/12089662
+		for (uz index = 0; index < size; ++index) {
+			int a = dest->data[index];
+			int b = src->data[index];
+			int m;
 
-	us_ring_s				*aplay_enc_ring;
-	u16						aplay_seq_next;
-	us_ring_s				*aplay_pcm_ring;
+			a += 32768;
+			b += 32768;
 
-    US_LIST_DECLARE;
-} us_janus_client_s;
+			if ((a < 32768) && (b < 32768)) {
+				m = a * b / 32768;
+			} else {
+				m = 2 * (a + b) - (a * b) / 32768 - 65536;
+			}
+			if (m == 65536) {
+				m = 65535;
+			}
+			m -= 32768;
 
+			dest->data[index] = m;
+		}
+	}
+}
 
-us_janus_client_s *us_janus_client_init(janus_callbacks *gw, janus_plugin_session *session);
-void us_janus_client_destroy(us_janus_client_s *client);
+us_au_encoded_s *us_au_encoded_init(void) {
+	us_au_encoded_s *enc;
+	US_CALLOC(enc, 1);
+	return enc;
+}
 
-void us_janus_client_send(us_janus_client_s *client, const us_rtp_s *rtp);
-void us_janus_client_recv(us_janus_client_s *client, janus_plugin_rtp *packet);
+void us_au_encoded_destroy(us_au_encoded_s *enc) {
+	free(enc);
+}

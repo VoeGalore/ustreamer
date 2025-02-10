@@ -22,40 +22,39 @@
 
 #pragma once
 
-#include <stdatomic.h>
-
-#include <pthread.h>
-#include <alsa/asoundlib.h>
-#include <speex/speex_resampler.h>
-#include <opus/opus.h>
-
 #include "uslibs/types.h"
-#include "uslibs/ring.h"
+
+#include "rtp.h"
+
+// A number of frames per 1 channel:
+//   - https://github.com/xiph/opus/blob/7b05f44/src/opus_demo.c#L368
+#define US_AU_FRAME_MS			20
+// #define _HZ_TO_FRAMES(_hz)	(6 * (_hz) / 50) // 120ms
+#define US_AU_HZ_TO_FRAMES(_hz)	((_hz) / 50) // 20ms
+#define US_AU_HZ_TO_BUF16(_hz)	(US_AU_HZ_TO_FRAMES(_hz) * US_RTP_OPUS_CH) // ... * 2: One stereo frame = (16bit L) + (16bit R)
+#define US_AU_HZ_TO_BUF8(_hz)	(US_AU_HZ_TO_BUF16(_hz) * sizeof(s16))
+
+#define US_AU_MIN_PCM_HZ		8000
+#define US_AU_MAX_PCM_HZ		192000
+#define US_AU_MAX_BUF16			US_AU_HZ_TO_BUF16(US_AU_MAX_PCM_HZ)
+#define US_AU_MAX_BUF8			US_AU_HZ_TO_BUF8(US_AU_MAX_PCM_HZ)
 
 
 typedef struct {
-	snd_pcm_t			*pcm;
-	uint				pcm_hz;
-	uint				pcm_frames;
-	uz					pcm_size;
-	snd_pcm_hw_params_t	*pcm_params;
-	SpeexResamplerState	*res;
-	OpusEncoder			*enc;
+	s16		data[US_AU_MAX_BUF16];
+	uz		frames;
+} us_au_pcm_s;
 
-	us_ring_s		*pcm_ring;
-	us_ring_s		*enc_ring;
-	u32				pts;
-
-	pthread_t		pcm_tid;
-	pthread_t		enc_tid;
-	bool			tids_created;
-	atomic_bool		stop;
-} us_audio_s;
+typedef struct {
+	u8		data[US_RTP_PAYLOAD_SIZE];
+	uz		used;
+	u64		pts;
+} us_au_encoded_s;
 
 
-bool us_audio_probe(const char *name);
+us_au_pcm_s *us_au_pcm_init(void);
+void us_au_pcm_destroy(us_au_pcm_s *pcm);
+void us_au_pcm_mix(us_au_pcm_s *a, us_au_pcm_s *b);
 
-us_audio_s *us_audio_init(const char *name, uint pcm_hz);
-void us_audio_destroy(us_audio_s *audio);
-
-int us_audio_get_encoded(us_audio_s *audio, u8 *data, uz *size, u64 *pts);
+us_au_encoded_s *us_au_encoded_init(void);
+void us_au_encoded_destroy(us_au_encoded_s *enc);

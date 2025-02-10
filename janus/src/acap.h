@@ -25,41 +25,37 @@
 #include <stdatomic.h>
 
 #include <pthread.h>
-#include <janus/plugins/plugin.h>
+#include <alsa/asoundlib.h>
+#include <speex/speex_resampler.h>
+#include <opus/opus.h>
 
 #include "uslibs/types.h"
-#include "uslibs/list.h"
 #include "uslibs/ring.h"
-
-#include "rtp.h"
 
 
 typedef struct {
-	janus_callbacks			*gw;
-	janus_plugin_session	*session;
-	atomic_bool				transmit;
-	atomic_bool				transmit_acap;
-	atomic_bool				transmit_aplay;
-	atomic_uint				video_orient;
+	snd_pcm_t			*dev;
+	uint				pcm_hz;
+	uint				pcm_frames;
+	uz					pcm_size;
+	snd_pcm_hw_params_t	*dev_params;
+	SpeexResamplerState	*res;
+	OpusEncoder			*enc;
 
-	pthread_t				video_tid;
-	pthread_t				acap_tid;
-	pthread_t				aplay_tid;
-	atomic_bool				stop;
+	us_ring_s		*pcm_ring;
+	us_ring_s		*enc_ring;
+	u32				pts;
 
-	us_ring_s				*video_ring;
-	us_ring_s				*acap_ring;
-
-	us_ring_s				*aplay_enc_ring;
-	u16						aplay_seq_next;
-	us_ring_s				*aplay_pcm_ring;
-
-    US_LIST_DECLARE;
-} us_janus_client_s;
+	pthread_t		pcm_tid;
+	pthread_t		enc_tid;
+	bool			tids_created;
+	atomic_bool		stop;
+} us_acap_s;
 
 
-us_janus_client_s *us_janus_client_init(janus_callbacks *gw, janus_plugin_session *session);
-void us_janus_client_destroy(us_janus_client_s *client);
+bool us_acap_probe(const char *name);
 
-void us_janus_client_send(us_janus_client_s *client, const us_rtp_s *rtp);
-void us_janus_client_recv(us_janus_client_s *client, janus_plugin_rtp *packet);
+us_acap_s *us_acap_init(const char *name, uint pcm_hz);
+void us_acap_destroy(us_acap_s *acap);
+
+int us_acap_get_encoded(us_acap_s *acap, u8 *data, uz *size, u64 *pts);
